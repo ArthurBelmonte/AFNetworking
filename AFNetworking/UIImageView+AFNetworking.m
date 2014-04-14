@@ -30,6 +30,7 @@
 - (UIImage *)cachedImageForRequest:(NSURLRequest *)request;
 - (void)cacheImage:(UIImage *)image
         forRequest:(NSURLRequest *)request;
+- (void)clearCachedRequest:(NSURLRequest *)request;
 @end
 
 #pragma mark -
@@ -54,6 +55,16 @@ static char kAFImageRequestOperationObjectKey;
 
 - (void)af_setImageRequestOperation:(AFImageRequestOperation *)imageRequestOperation {
     objc_setAssociatedObject(self, &kAFImageRequestOperationObjectKey, imageRequestOperation, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
+- (void)clearImageCacheForURL:(NSURL *)url {
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
+    [request addValue:@"image/*" forHTTPHeaderField:@"Accept"];
+    
+    UIImage *cachedImage = [[[self class] af_sharedImageCache] cachedImageForRequest:request];
+    if (cachedImage) {
+        [[[self class] af_sharedImageCache] clearCachedRequest:request];
+    }
 }
 
 + (NSOperationQueue *)af_sharedImageRequestOperationQueue {
@@ -183,6 +194,12 @@ static inline NSString * AFImageCacheKeyFromURLRequest(NSURLRequest *request) {
 {
     if (image && request) {
         [self setObject:image forKey:AFImageCacheKeyFromURLRequest(request)];
+    }
+}
+
+- (void)clearCachedRequest:(NSURLRequest *)request {
+    if (request) {
+        [self removeObjectForKey:AFImageCacheKeyFromURLRequest(request)];
     }
 }
 
